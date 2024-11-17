@@ -4,4 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-raylib = { version = "5.0.2", features = ["wayland"] }
+nalgebra-glm = "0.19.0"
+raylib = { version = "5.0.2", features = [] }
