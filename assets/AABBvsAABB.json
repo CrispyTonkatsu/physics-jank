@@ -1,0 +1,26 @@
+[
+	{
+		"position": [
+			0.0,
+			0.0
+		],
+		"rotation": 0,
+		"scale": [
+			100.0,
+			100.0
+		],
+		"collider_file": "StdSquare.json"
+	},
+	{
+		"position": [
+			100.0,
+			100.0
+		],
+		"rotation": 0,
+		"scale": [
+			100.0,
+			100.0
+		],
+		"collider_file": "StdSquare.json"
+	}
+]
