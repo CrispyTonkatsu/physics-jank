@@ -1,7 +1,10 @@
 use body::Body;
 use raylib::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::fs::{self};
+use std::{
+    fs::{self},
+    time::Instant,
+};
 mod body;
 mod polygon;
 
@@ -56,7 +59,21 @@ impl Engine {
             body.construct_collider();
         }
 
+        let mut last_time = Instant::now();
+
         while !engine.handle.window_should_close() {
+            let delta_time = last_time.elapsed().as_secs_f32();
+
+            for (i, body) in bodies.iter().enumerate() {
+                for other in &bodies[i + 1..bodies.len()] {
+                    body.check_collision(other, delta_time);
+                }
+            }
+
+            for body in bodies.iter_mut() {
+                body.integrate(delta_time);
+            }
+
             let draw = &mut engine.handle.begin_drawing(&engine.thread);
             draw.clear_background(Color::from_hex("192336").unwrap());
 
@@ -65,6 +82,8 @@ impl Engine {
             for body in bodies.iter() {
                 body.draw(&mut draw2d);
             }
+
+            last_time = Instant::now();
         }
     }
 }
