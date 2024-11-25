@@ -6,6 +6,8 @@ use raylib::{
 };
 use serde::{Deserialize, Serialize};
 
+use crate::plane::Plane;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Polygon {
     points: Vec<Vec2>,
@@ -15,11 +17,30 @@ pub struct Polygon {
 }
 
 impl Polygon {
-    pub fn check_collision(&self, _other: &Polygon, _dt: f32) {
-        // TODO: Left off here, starting to implement the collision detection algorithm.
+    pub fn check_collision(&self, other: &Polygon, _dt: f32) -> bool {
+        // TODO: Implement the proper checks here
+        let _query = self.query_faces(other);
+        false
     }
 
-    pub fn _map_support(&self, direction: Vec2) -> Vec2 {
+    pub fn query_faces(&self, other: &Polygon) -> (usize, f32) {
+        // TODO: Turn this into iterator stuff, it probably looks prettier
+        let mut max_distance = 0.;
+        let mut max_index = 0;
+        for i in 0..self.points.len() {
+            let plane = self.get_plane(i);
+            let support = other.map_support(plane.get_normal());
+            let distance = plane.distance_to(&support);
+
+            if distance > max_distance {
+                max_distance = distance;
+                max_index = i;
+            }
+        }
+        (max_index, max_distance)
+    }
+
+    pub fn map_support(&self, direction: Vec2) -> Vec2 {
         let search = self.points.iter().max_by(|a, b| {
             (a.dot(&direction).partial_cmp(&b.dot(&direction)))
                 .expect("Vector dots resulted in inf (check the math)")
@@ -31,6 +52,11 @@ impl Polygon {
                 vec2(0., 0.)
             }
         }
+    }
+
+    pub fn get_plane(&self, index: usize) -> Plane {
+        let wrapped_index = (index + 1) % self.points.len();
+        Plane::new(self.points[index], self.points[wrapped_index])
     }
 
     pub fn get_transform(&self) -> Mat3x3 {
