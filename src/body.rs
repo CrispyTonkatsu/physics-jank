@@ -35,7 +35,7 @@ pub struct Body {
     moment: f32,
     // For rendering
     #[serde(default)]
-    red: bool,
+    pub red: bool,
 }
 
 impl Body {

@@ -90,12 +90,20 @@ impl Engine {
             }
 
             if unsafe { IsKeyDown(KeyboardKey::KEY_SPACE as i32) } {
-                bodies[0].rotation += 0.01;
+                bodies[0].rotation += 0.001;
             }
 
-            for (i, body) in bodies.iter().enumerate() {
-                for other in &bodies[i + 1..bodies.len()] {
-                    body.check_collision(other, delta_time);
+            bodies.iter_mut().for_each(|body| body.red = false);
+
+            for i in 0..bodies.len() - 1 {
+                for j in i + 1..bodies.len() {
+                    // TODO: Left off here adding the static resolution
+                    // After that, you should add the physics stuff
+                    let red = bodies[i].check_collision(&bodies[j], delta_time);
+                    if red {
+                        bodies[i].red = red;
+                        bodies[j].red = red;
+                    }
                 }
             }
 

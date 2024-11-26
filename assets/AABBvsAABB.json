@@ -31,5 +31,21 @@
 		"restitution": 1,
 		"friction": 1,
 		"is_static": true
+	},
+	{
+		"position": [
+			200.0,
+			500.0
+		],
+		"rotation": 0,
+		"scale": [
+			100.0,
+			100.0
+		],
+		"collider_file": "Pentagon.json",
+		"mass": 10,
+		"inertia": 1,
+		"restitution": 1,
+		"friction": 1
 	}
 ]

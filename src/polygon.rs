@@ -26,7 +26,6 @@ impl Polygon {
     }
 
     pub fn query_faces(&self, other: &Polygon) -> (usize, f32) {
-        // TODO: Turn this into iterator stuff, it probably looks prettier
         let mut max_distance = -f32::INFINITY;
         let mut max_index = 0;
         for i in 0..self.points.len() {
