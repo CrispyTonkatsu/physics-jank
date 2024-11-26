@@ -11,21 +11,23 @@ impl Plane {
     }
 
     pub fn get_normal(&self) -> Vec2 {
-        // HACK: Probably check if it is pointing outwards
+        // HACK: Probably check if it is pointing outwards, this is so that points can be both
+        // counter or clockwise
         let to_end = self.end - self.start;
         vec2(to_end.y, -to_end.x)
     }
 
     pub fn distance_to(&self, point: &Vec2) -> f32 {
         let projected = self.project_point(point);
-        let point_to_proj = projected - point;
-        let sign = if point_to_proj.dot(&self.get_normal()) >= 0. {
+        let proj_to_point = point - projected;
+        // TIP: This is what was missing from the code in the na_engine
+        let sign = if proj_to_point.dot(&self.get_normal()) >= 0. {
             1.
         } else {
             -1.
         };
 
-        point_to_proj.magnitude() * sign
+        proj_to_point.magnitude() * sign
     }
 
     pub fn project_point(&self, point: &Vec2) -> Vec2 {

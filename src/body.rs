@@ -2,6 +2,7 @@ use std::fs;
 
 use nalgebra_glm::{rotation2d, scaling2d, translation2d, vec2};
 use nalgebra_glm::{Mat3x3, Vec2};
+use raylib::color::Color;
 use raylib::prelude::{RaylibDrawHandle, RaylibMode2D};
 use serde::{Deserialize, Serialize};
 
@@ -11,7 +12,7 @@ use crate::polygon::Polygon;
 pub struct Body {
     // Non-Physics Variables
     pub position: Vec2,
-    rotation: f32,
+    pub rotation: f32,
     scale: Vec2,
     collider_file: String,
     // Body Properties (Probably turn the f32s into some sort of properties struct)
@@ -32,17 +33,19 @@ pub struct Body {
     angular_velocity: f32,
     #[serde(default)]
     moment: f32,
+    // For rendering
+    #[serde(default)]
+    red: bool,
 }
 
 impl Body {
-    pub fn check_collision(&self, other: &Body, dt: f32) {
+    pub fn check_collision(&self, other: &Body, dt: f32) -> bool {
         if let (Some(collider), Some(other_collider)) = (&self.collider, &other.collider) {
-            if collider
+            collider
                 .get_in_world(&self.get_transform())
                 .check_collision(&other_collider.get_in_world(&other.get_transform()), dt)
-            {
-                println!("Collision");
-            }
+        } else {
+            false
         }
     }
 
@@ -86,7 +89,8 @@ impl Body {
 
     pub fn draw(&self, handle: &mut RaylibMode2D<RaylibDrawHandle>) {
         if let Some(collider) = &self.collider {
-            collider.draw(&self.get_transform(), handle);
+            let color = if self.red { Color::RED } else { Color::WHITE };
+            collider.draw(&self.get_transform(), handle, color);
         }
     }
 }

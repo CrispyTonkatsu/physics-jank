@@ -25,7 +25,7 @@
 			100.0,
 			100.0
 		],
-		"collider_file": "StdSquare.json",
+		"collider_file": "Trapezoid.json",
 		"mass": 1,
 		"inertia": 1,
 		"restitution": 1,

@@ -89,6 +89,10 @@ impl Engine {
                 bodies[0].position += translation.normalize();
             }
 
+            if unsafe { IsKeyDown(KeyboardKey::KEY_SPACE as i32) } {
+                bodies[0].rotation += 0.01;
+            }
+
             for (i, body) in bodies.iter().enumerate() {
                 for other in &bodies[i + 1..bodies.len()] {
                     body.check_collision(other, delta_time);
