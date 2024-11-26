@@ -10,7 +10,7 @@ use crate::polygon::Polygon;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Body {
     // Non-Physics Variables
-    position: Vec2,
+    pub position: Vec2,
     rotation: f32,
     scale: Vec2,
     collider_file: String,
@@ -37,14 +37,17 @@ pub struct Body {
 impl Body {
     pub fn check_collision(&self, other: &Body, dt: f32) {
         if let (Some(collider), Some(other_collider)) = (&self.collider, &other.collider) {
-            collider
+            if collider
                 .get_in_world(&self.get_transform())
-                .check_collision(&other_collider.get_in_world(&other.get_transform()), dt);
+                .check_collision(&other_collider.get_in_world(&other.get_transform()), dt)
+            {
+                println!("Collision");
+            }
         }
     }
 
     pub fn calc_loads(&mut self) {
-        self.net_force = vec2(0., 9.81) * 10000.;
+        self.net_force = vec2(0., 9.81) * 0.; /* 10000.;*/
         self.moment = 0.;
     }
 

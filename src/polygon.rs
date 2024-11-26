@@ -1,3 +1,5 @@
+use core::f32;
+
 use nalgebra_glm::{rotation2d, scaling2d, translation2d, vec2, vec3, Mat3x3, Vec2};
 use raylib::{
     color::Color,
@@ -18,21 +20,22 @@ pub struct Polygon {
 
 impl Polygon {
     pub fn check_collision(&self, other: &Polygon, _dt: f32) -> bool {
-        // TODO: Implement the proper checks here
-        let _query = self.query_faces(other);
-        false
+        let query = self.query_faces(other);
+        let query_other = other.query_faces(self);
+        println!("{}, {}", query.0, query.1);
+        query.1 < 0. && query_other.1 < 0.
     }
 
     pub fn query_faces(&self, other: &Polygon) -> (usize, f32) {
         // TODO: Turn this into iterator stuff, it probably looks prettier
-        let mut max_distance = 0.;
+        let mut max_distance = f32::INFINITY;
         let mut max_index = 0;
         for i in 0..self.points.len() {
             let plane = self.get_plane(i);
-            let support = other.map_support(plane.get_normal());
+            let support = other.map_support(-plane.get_normal());
             let distance = plane.distance_to(&support);
 
-            if distance > max_distance {
+            if distance < max_distance {
                 max_distance = distance;
                 max_index = i;
             }

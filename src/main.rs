@@ -1,4 +1,6 @@
 use body::Body;
+use ffi::IsKeyDown;
+use nalgebra_glm::vec2;
 use raylib::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -64,6 +66,28 @@ impl Engine {
 
         while !engine.handle.window_should_close() {
             let delta_time = last_time.elapsed().as_secs_f32();
+
+            let mut translation = vec2(0., 0.);
+
+            if unsafe { IsKeyDown(KeyboardKey::KEY_A as i32) } {
+                translation = vec2(-1., 0.);
+            }
+
+            if unsafe { IsKeyDown(KeyboardKey::KEY_D as i32) } {
+                translation = vec2(1., 0.);
+            }
+
+            if unsafe { IsKeyDown(KeyboardKey::KEY_W as i32) } {
+                translation = vec2(0., -1.);
+            }
+
+            if unsafe { IsKeyDown(KeyboardKey::KEY_S as i32) } {
+                translation = vec2(0., 1.);
+            }
+
+            if translation.magnitude_squared() > 0. {
+                bodies[0].position += translation.normalize();
+            }
 
             for (i, body) in bodies.iter().enumerate() {
                 for other in &bodies[i + 1..bodies.len()] {
