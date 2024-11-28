@@ -39,13 +39,13 @@ pub struct Body {
 }
 
 impl Body {
-    pub fn check_collision(&self, other: &Body, dt: f32) -> bool {
+    pub fn check_collision(&self, other: &Body, dt: f32) -> Option<Vec2> {
         if let (Some(collider), Some(other_collider)) = (&self.collider, &other.collider) {
             collider
                 .get_in_world(&self.get_transform())
                 .check_collision(&other_collider.get_in_world(&other.get_transform()), dt)
         } else {
-            false
+            None
         }
     }
 

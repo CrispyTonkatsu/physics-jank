@@ -1,6 +1,6 @@
 use body::Body;
 use ffi::IsKeyDown;
-use nalgebra_glm::vec2;
+use nalgebra_glm::{vec2, Vec2};
 use raylib::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -95,14 +95,16 @@ impl Engine {
 
             bodies.iter_mut().for_each(|body| body.red = false);
 
+            let mut normal_vector: Option<Vec2> = None;
             for i in 0..bodies.len() - 1 {
                 for j in i + 1..bodies.len() {
                     // TODO: Left off here adding the static resolution
                     // After that, you should add the physics stuff
-                    let red = bodies[i].check_collision(&bodies[j], delta_time);
-                    if red {
-                        bodies[i].red = red;
-                        bodies[j].red = red;
+                    let collision_info = bodies[i].check_collision(&bodies[j], delta_time);
+                    if collision_info.is_some() {
+                        bodies[i].red = true;
+                        bodies[j].red = true;
+                        normal_vector = collision_info;
                     }
                 }
             }
@@ -118,6 +120,14 @@ impl Engine {
 
             for body in bodies.iter() {
                 body.draw(&mut draw2d);
+            }
+
+            if let Some(normal_vector) = normal_vector {
+                draw2d.draw_line_v(
+                    Vector2::new(500., 500.),
+                    Vector2::new(normal_vector.x, normal_vector.y) * 100.,
+                    Color::GREEN,
+                );
             }
 
             last_time = Instant::now();

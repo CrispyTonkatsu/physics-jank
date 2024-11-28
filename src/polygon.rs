@@ -19,10 +19,19 @@ pub struct Polygon {
 }
 
 impl Polygon {
-    pub fn check_collision(&self, other: &Polygon, _dt: f32) -> bool {
+    pub fn check_collision(&self, other: &Polygon, _dt: f32) -> Option<Vec2> {
         let query = self.query_faces(other);
+        if query.1 > 0. {
+            return None;
+        }
+
         let query_other = other.query_faces(self);
-        query.1 < 0. && query_other.1 < 0.
+        if query_other.1 > 0. {
+            return None;
+        }
+
+        // TODO: Find which normal face to return
+        Some(other.get_plane(query_other.0).get_normal())
     }
 
     pub fn query_faces(&self, other: &Polygon) -> (usize, f32) {
@@ -41,6 +50,7 @@ impl Polygon {
         (max_index, max_distance)
     }
 
+    // This could work with circles if you use the support point properly
     pub fn map_support(&self, direction: Vec2) -> Vec2 {
         let search = self.points.iter().max_by(|a, b| {
             (a.dot(&direction).partial_cmp(&b.dot(&direction)))
