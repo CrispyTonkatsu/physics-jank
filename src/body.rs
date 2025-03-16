@@ -46,21 +46,19 @@ impl Body {
         collider.check_collision(&other_collider, dt)
     }
 
-    pub fn calc_loads(&mut self) {
-        self.net_force = vec2(0., 9.81) * 0.; /* 10000.;*/
-        self.moment = 0.;
-    }
-
     pub fn integrate(&mut self, dt: f32) {
         if self.is_static {
             return;
         }
 
-        self.calc_loads();
+        // TODO: Make gravity changeable
+        let gravity = vec2(0., 9.81);
 
-        let acceleration = self.net_force / self.mass;
+        let acceleration = (1.0f32 / self.mass) * self.net_force + gravity;
         self.velocity += acceleration * dt;
         self.position += self.velocity * dt;
+
+        println!("{0}", self.velocity);
 
         let angular_acceleration = self.moment / self.inertia;
         self.angular_velocity += angular_acceleration * dt;

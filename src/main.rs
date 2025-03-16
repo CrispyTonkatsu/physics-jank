@@ -9,7 +9,6 @@ use std::{
     rc::Rc,
     time::Instant,
 };
-
 mod body;
 mod collision_info;
 mod plane;
@@ -122,10 +121,7 @@ impl Engine {
 
     fn resolve_collisions(&mut self, _dt: f32) {
         // TODO: implement the collision resolution algorithm here (read the docs you bookmarked)
-        for collision in self.collisions.iter() {
-            let normal = collision.normal;
-            println!("{normal}");
-        }
+        for _collision in self.collisions.iter() {}
     }
 
     fn integrate(&mut self, dt: f32) {
@@ -136,6 +132,10 @@ impl Engine {
     }
 
     fn draw(&mut self) {
+        // TODO: Make the world scale a little bit better so that values don't need to be massive
+
+        // TODO: Make the colors nicer to look at so that I don't have a stroke when debugging this
+        // for 5 hours straight (probs use Rose Pine colors for the background and shapes).
         let draw = &mut self.handle.begin_drawing(&self.thread);
         draw.clear_background(Color::from_hex("192336").unwrap());
 
