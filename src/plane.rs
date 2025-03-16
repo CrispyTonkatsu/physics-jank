@@ -11,8 +11,6 @@ impl Plane {
     }
 
     pub fn get_normal(&self) -> Vec2 {
-        // HACK: Probably check if it is pointing outwards, this is so that points can be both
-        // counter or clockwise
         let to_end = self.end - self.start;
         vec2(to_end.y, -to_end.x)
     }
@@ -21,7 +19,6 @@ impl Plane {
         let projected = self.project_point(point);
         let proj_to_point = point - projected;
 
-        // NOTE: This is what was missing from the code in the na_engine
         let sign = if proj_to_point.dot(&self.get_normal()) >= 0. {
             1.
         } else {

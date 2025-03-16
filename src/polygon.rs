@@ -1,5 +1,3 @@
-use core::f32;
-
 use nalgebra_glm::{rotation2d, scaling2d, translation2d, vec2, vec3, Mat3x3, Vec2};
 use raylib::{
     color::Color,
@@ -30,8 +28,11 @@ impl Polygon {
             return None;
         }
 
-        // TODO: Find which normal face to return
-        Some(other.get_plane(query_other.0).get_normal())
+        if query.1 > query_other.1 {
+            Some(self.get_plane(query.0).get_normal().normalize() * query.1)
+        } else {
+            Some(other.get_plane(query_other.0).get_normal().normalize() * query_other.1)
+        }
     }
 
     pub fn query_faces(&self, other: &Polygon) -> (usize, f32) {

@@ -1,14 +1,17 @@
 use body::Body;
-use ffi::IsKeyDown;
-use nalgebra_glm::{vec2, Vec2};
-use polygon::Polygon;
+use collision_info::CollisionInfo;
 use raylib::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{
+    borrow::BorrowMut,
+    cell::RefCell,
     fs::{self},
+    rc::Rc,
     time::Instant,
 };
+
 mod body;
+mod collision_info;
 mod plane;
 mod polygon;
 
@@ -34,14 +37,17 @@ pub struct Engine {
     handle: RaylibHandle,
     thread: RaylibThread,
     camera: Camera2D,
+    bodies: Vec<Rc<RefCell<Body>>>,
+    collisions: Vec<CollisionInfo>,
 }
 
 impl Engine {
     fn run(config: EngineConfig) {
         let (handle, thread) = raylib::init()
             .size(config.display_width, config.display_height)
-            .title("Hello, World")
+            .title("Physics Jank")
             .build();
+
         let mut engine = Self {
             handle,
             thread,
@@ -51,8 +57,27 @@ impl Engine {
                 rotation: 0.,
                 zoom: 1.,
             },
+            bodies: vec![],
+            collisions: vec![],
         };
 
+        engine.load_simulation(config);
+
+        let mut last_time = Instant::now();
+
+        while !engine.handle.window_should_close() {
+            let delta_time = last_time.elapsed().as_secs_f32();
+
+            engine.check_collisions(delta_time);
+            engine.resolve_collisions(delta_time);
+            engine.integrate(delta_time);
+            engine.draw();
+
+            last_time = Instant::now();
+        }
+    }
+
+    fn load_simulation(&mut self, config: EngineConfig) {
         let config_file =
             fs::read_to_string(config.setup_file).expect("Could not find the setup file.");
 
@@ -60,78 +85,64 @@ impl Engine {
             serde_json::from_str(&config_file).expect("Unable to read the setup file");
 
         for body in bodies.iter_mut() {
-            body.construct_collider();
+            body.borrow_mut().construct_collider();
         }
 
-        let mut last_time = Instant::now();
+        self.bodies = bodies
+            .into_iter()
+            .map(|x| Rc::new(RefCell::new(x)))
+            .collect();
+    }
 
-        while !engine.handle.window_should_close() {
-            let delta_time = last_time.elapsed().as_secs_f32();
+    fn check_collisions(&mut self, dt: f32) {
+        let length = self.bodies.len();
+        for (i, body) in self.bodies[0..length - 1].iter().enumerate() {
+            for other_body in &self.bodies[i + 1..length] {
+                let sat_output;
+                {
+                    let body = (**body).borrow_mut();
+                    let other_body = (**other_body).borrow_mut();
 
-            let mut translation = vec2(0., 0.);
+                    sat_output = body.check_collision(&other_body, dt);
+                }
 
-            if unsafe { IsKeyDown(KeyboardKey::KEY_A as i32) } {
-                translation = vec2(-1., 0.);
-            }
-
-            if unsafe { IsKeyDown(KeyboardKey::KEY_D as i32) } {
-                translation = vec2(1., 0.);
-            }
-
-            if unsafe { IsKeyDown(KeyboardKey::KEY_W as i32) } {
-                translation = vec2(0., -1.);
-            }
-
-            if unsafe { IsKeyDown(KeyboardKey::KEY_S as i32) } {
-                translation = vec2(0., 1.);
-            }
-
-            if translation.magnitude_squared() > 0. {
-                bodies[0].position += translation.normalize();
-            }
-
-            if unsafe { IsKeyDown(KeyboardKey::KEY_SPACE as i32) } {
-                bodies[0].rotation += 0.001;
-            }
-
-            bodies.iter_mut().for_each(|body| body.red = false);
-
-            let mut normal_vector: Option<Vec2> = None;
-            for i in 0..bodies.len() - 1 {
-                for j in i + 1..bodies.len() {
-                    // TODO: Left off here adding the static resolution
-                    // After that, you should add the physics stuff
-                    let collision_info = bodies[i].check_collision(&bodies[j], delta_time);
-                    if collision_info.is_some() {
-                        bodies[i].red = true;
-                        bodies[j].red = true;
-                        normal_vector = collision_info;
-                    }
+                if let Some(sat_output) = sat_output {
+                    let normal = sat_output.normalize();
+                    let penetration = sat_output.magnitude();
+                    self.collisions.push(CollisionInfo::new(
+                        normal,
+                        penetration,
+                        body.clone(),
+                        other_body.clone(),
+                    ));
                 }
             }
+        }
+    }
 
-            for body in bodies.iter_mut() {
-                body.integrate(delta_time);
-            }
+    fn resolve_collisions(&mut self, _dt: f32) {
+        // TODO: implement the collision resolution algorithm here (read the docs you bookmarked)
+        for collision in self.collisions.iter() {
+            let normal = collision.normal;
+            println!("{normal}");
+        }
+    }
 
-            let draw = &mut engine.handle.begin_drawing(&engine.thread);
-            draw.clear_background(Color::from_hex("192336").unwrap());
+    fn integrate(&mut self, dt: f32) {
+        for body in self.bodies.iter_mut() {
+            let mut body = (**body).borrow_mut();
+            body.integrate(dt);
+        }
+    }
 
-            let mut draw2d = draw.begin_mode2D(engine.camera);
+    fn draw(&mut self) {
+        let draw = &mut self.handle.begin_drawing(&self.thread);
+        draw.clear_background(Color::from_hex("192336").unwrap());
 
-            for body in bodies.iter() {
-                body.draw(&mut draw2d);
-            }
+        let mut draw2d = draw.begin_mode2D(self.camera);
 
-            if let Some(normal_vector) = normal_vector {
-                draw2d.draw_line_v(
-                    Vector2::new(500., 500.),
-                    Vector2::new(normal_vector.x, normal_vector.y) * 100.,
-                    Color::GREEN,
-                );
-            }
-
-            last_time = Instant::now();
+        for body in self.bodies.iter() {
+            body.borrow().draw(&mut draw2d);
         }
     }
 }

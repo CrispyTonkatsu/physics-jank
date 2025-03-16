@@ -33,20 +33,17 @@ pub struct Body {
     angular_velocity: f32,
     #[serde(default)]
     moment: f32,
-    // For rendering
-    #[serde(default)]
-    pub red: bool,
 }
 
 impl Body {
     pub fn check_collision(&self, other: &Body, dt: f32) -> Option<Vec2> {
-        if let (Some(collider), Some(other_collider)) = (&self.collider, &other.collider) {
-            collider
-                .get_in_world(&self.get_transform())
-                .check_collision(&other_collider.get_in_world(&other.get_transform()), dt)
-        } else {
-            None
-        }
+        let collider = self.collider.as_ref()?;
+        let other_collider = other.collider.as_ref()?;
+
+        let collider = collider.get_in_world(&self.get_transform());
+        let other_collider = other_collider.get_in_world(&other.get_transform());
+
+        collider.check_collision(&other_collider, dt)
     }
 
     pub fn calc_loads(&mut self) {
@@ -89,8 +86,7 @@ impl Body {
 
     pub fn draw(&self, handle: &mut RaylibMode2D<RaylibDrawHandle>) {
         if let Some(collider) = &self.collider {
-            let color = if self.red { Color::RED } else { Color::WHITE };
-            collider.draw(&self.get_transform(), handle, color);
+            collider.draw(&self.get_transform(), handle, Color::WHITE);
         }
     }
 }
