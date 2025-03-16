@@ -20,7 +20,8 @@ impl Plane {
     pub fn distance_to(&self, point: &Vec2) -> f32 {
         let projected = self.project_point(point);
         let proj_to_point = point - projected;
-        // TIP: This is what was missing from the code in the na_engine
+
+        // NOTE: This is what was missing from the code in the na_engine
         let sign = if proj_to_point.dot(&self.get_normal()) >= 0. {
             1.
         } else {

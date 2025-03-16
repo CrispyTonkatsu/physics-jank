@@ -37,6 +37,7 @@ impl Polygon {
     pub fn query_faces(&self, other: &Polygon) -> (usize, f32) {
         let mut max_distance = -f32::INFINITY;
         let mut max_index = 0;
+
         for i in 0..self.points.len() {
             let plane = self.get_plane(i);
             let support = other.map_support(-plane.get_normal());
@@ -52,17 +53,14 @@ impl Polygon {
 
     // This could work with circles if you use the support point properly
     pub fn map_support(&self, direction: Vec2) -> Vec2 {
-        let search = self.points.iter().max_by(|a, b| {
-            (a.dot(&direction).partial_cmp(&b.dot(&direction)))
-                .expect("Vector dots resulted in inf (check the math)")
-        });
-        match search {
-            Some(x) => *x,
-            None => {
-                println!("Empty point vector");
-                vec2(0., 0.)
-            }
-        }
+        self.points
+            .iter()
+            .max_by(|a, b| {
+                (a.dot(&direction).partial_cmp(&b.dot(&direction)))
+                    .expect("Vector dots resulted in inf (check the math)")
+            })
+            .copied()
+            .unwrap_or(vec2(0.0, 0.0))
     }
 
     pub fn get_plane(&self, index: usize) -> Plane {
