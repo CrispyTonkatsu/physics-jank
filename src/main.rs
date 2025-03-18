@@ -13,8 +13,26 @@ mod body;
 mod collision_info;
 mod plane;
 mod polygon;
+use macroquad::prelude::*;
 
-fn main() {
+// HACK: Left off here, migrating to macroquad for nicer windows and even less thinking about
+// rendering (Look at how simple the framework is, me when proc macros are crazy)
+#[macroquad::main("BasicShapes")]
+async fn main() {
+    loop {
+        clear_background(RED);
+
+        draw_line(40.0, 40.0, 100.0, 200.0, 15.0, BLUE);
+        draw_rectangle(screen_width() / 2.0 - 60.0, 100.0, 120.0, 60.0, GREEN);
+        draw_circle(screen_width() - 30.0, screen_height() - 30.0, 15.0, YELLOW);
+
+        draw_text("IT WORKS!", 20.0, 20.0, 30.0, DARKGRAY);
+
+        next_frame().await
+    }
+}
+
+fn old_main() {
     let config_file = fs::read_to_string("./config.json")
         .expect("There should be a config file at the root of the project.");
 
