@@ -1,12 +1,15 @@
 use std::{cell::RefCell, rc::Rc};
 
 use nalgebra_glm::Vec2;
+use raylib::prelude::{RaylibDrawHandle, RaylibMode2D};
 
 use crate::{body::Body, collision_info::ContactPoints};
 
 pub trait Constraint {
     /// This function describes how it solves the constraint iteratively.
     fn solve(&mut self, dt: f32);
+
+    fn draw(&self, handle: &mut RaylibMode2D<RaylibDrawHandle>);
 }
 
 pub struct CollisionConstraint {
@@ -37,7 +40,10 @@ impl CollisionConstraint {
 }
 
 impl Constraint for CollisionConstraint {
-    fn solve(&mut self, dt: f32) {
-        todo!("not able to solve a collision constraint yet")
+    fn solve(&mut self, _dt: f32) {}
+
+    fn draw(&self, handle: &mut RaylibMode2D<RaylibDrawHandle>) {
+        let transform = (*self.reference_body.borrow()).get_transform();
+        self.manifold.draw(handle, &transform);
     }
 }

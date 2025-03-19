@@ -1,7 +1,11 @@
 use std::{cell::RefCell, rc::Rc};
 
 use crate::{body::Body, constraints::CollisionConstraint};
-use nalgebra_glm::Vec2;
+use nalgebra_glm::{Mat3x3, Vec2, Vec3};
+use raylib::{
+    color::Color,
+    prelude::{RaylibDraw, RaylibDrawHandle, RaylibMode2D},
+};
 
 #[derive(Debug)]
 pub struct CollisionInfo {
@@ -19,7 +23,7 @@ impl CollisionInfo {
         reference_body: Rc<RefCell<Body>>,
     ) -> Self {
         Self {
-            normal,
+            normal: normal.normalize(),
             penetration,
             incident_body,
             reference_body,
@@ -54,16 +58,16 @@ impl CollisionInfo {
             } - 1,
         );
 
-        // BUG: Check that this is working as intended (given it relies on the edges mapping very
-        // specifically)
+        // BUG: Check that this is working as intended
+        // (given it relies on the edges' ordering of counter-clock-wise)
         let mut output = ContactPoints::new(Some(incident_face.start()), Some(incident_face.end()));
 
         if let Some(prev_face_clip) = prev_face.find_intersection(&incident_face) {
-            output.a = Some(prev_face_clip);
+            output.b = Some(prev_face_clip);
         }
 
         if let Some(next_face_clip) = next_face.find_intersection(&incident_face) {
-            output.b = Some(next_face_clip);
+            output.a = Some(next_face_clip);
         }
 
         let normal = reference_face.get_normal().normalize();
@@ -74,8 +78,15 @@ impl CollisionInfo {
     }
 
     pub fn generate_constraint(&self) -> Box<CollisionConstraint> {
-        let _manifold = self.generate_manifold();
-        todo!("Can't generate constraints yet")
+        let manifold = self.generate_manifold();
+
+        Box::new(CollisionConstraint::new(
+            self.normal,
+            self.penetration,
+            manifold,
+            self.incident_body.clone(),
+            self.reference_body.clone(),
+        ))
     }
 }
 
@@ -91,21 +102,17 @@ impl ContactPoints {
         Self { a, b }
     }
 
-    pub fn is_valid(&self) -> bool {
-        !(self.a.is_none() && self.b.is_none())
-    }
+    pub fn draw(&self, handle: &mut RaylibMode2D<RaylibDrawHandle>, transform: &Mat3x3) {
+        // BUG: Show the manifold using a transform so that it actually goes to the right place
 
-    /// Returns the edge if there are 2 points in this manifold
-    pub fn get_edge(&self) -> Option<(Vec2, Vec2)> {
-        self.a.zip(self.b)
-    }
-
-    /// Returns the point if there is only one
-    pub fn get_point(&self) -> Option<Vec2> {
-        if self.a.is_some() && self.b.is_some() {
-            return None;
+        if let Some(mut point) = self.a {
+            point = (transform * Vec3::new(point.x, point.y, 1.)).xy();
+            handle.draw_circle(point.x as i32, point.y as i32, 10., Color::RED);
         }
 
-        self.a.or(self.b)
+        if let Some(mut point) = self.b {
+            point = (transform * Vec3::new(point.x, point.y, 1.)).xy();
+            handle.draw_circle(point.x as i32, point.y as i32, 10., Color::RED);
+        }
     }
 }

@@ -1,7 +1,11 @@
 use body::Body;
 use collision_info::CollisionInfo;
 use constraints::Constraint;
-use raylib::prelude::*;
+use nalgebra_glm::{vec2, Vec2};
+use raylib::{
+    ffi::{IsKeyDown, IsKeyPressed},
+    prelude::*,
+};
 use serde::{Deserialize, Serialize};
 use std::{
     borrow::BorrowMut,
@@ -65,17 +69,14 @@ impl Engine {
 
         engine.load_simulation(config);
 
-        let mut last_time = Instant::now();
-
         while !engine.handle.window_should_close() {
-            let delta_time = last_time.elapsed().as_secs_f32();
+            let delta_time = engine.handle.get_frame_time();
 
             engine.check_collisions(delta_time);
-            engine.resolve_collisions(delta_time);
-            engine.integrate(delta_time);
+            //engine.resolve_collisions(delta_time);
+            //engine.integrate(delta_time);
+            engine.test_controller(delta_time);
             engine.draw();
-
-            last_time = Instant::now();
         }
     }
 
@@ -167,6 +168,36 @@ impl Engine {
 
         for body in self.bodies.iter() {
             body.borrow().draw(&mut draw2d);
+        }
+
+        for collision in self.collisions.iter_mut() {
+            collision.generate_constraint().draw(&mut draw2d);
+        }
+        self.collisions.clear();
+    }
+
+    fn test_controller(&mut self, dt: f32) {
+        let handle = &self.handle;
+        let mut body = (*self.bodies[0]).borrow_mut();
+
+        if handle.is_key_down(KeyboardKey::KEY_W) {
+            body.position += Vec2::new(0., -1000.) * dt;
+        }
+
+        if handle.is_key_down(KeyboardKey::KEY_S) {
+            body.position += Vec2::new(0., 1000.) * dt;
+        }
+
+        if handle.is_key_down(KeyboardKey::KEY_A) {
+            body.position += Vec2::new(-1000., 0.) * dt;
+        }
+
+        if handle.is_key_down(KeyboardKey::KEY_D) {
+            body.position += Vec2::new(1000., 0.) * dt;
+        }
+
+        if handle.is_key_down(KeyboardKey::KEY_SPACE) {
+            body.rotation += 1.5 * dt;
         }
     }
 }
