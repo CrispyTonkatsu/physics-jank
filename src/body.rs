@@ -36,7 +36,7 @@ pub struct Body {
 }
 
 impl Body {
-    pub fn check_collision(&self, other: &Body, dt: f32) -> Option<Vec2> {
+    pub fn check_collision(&self, other: &Body, dt: f32) -> Option<(bool, Vec2, f32)> {
         let collider = self.collider.as_ref()?;
         let other_collider = other.collider.as_ref()?;
 
@@ -52,13 +52,11 @@ impl Body {
         }
 
         // TODO: Make gravity changeable
-        let gravity = vec2(0., 9.81);
+        let gravity = vec2(0., 9.81) * 10000000000.;
 
-        let acceleration = (1.0f32 / self.mass) * self.net_force + gravity;
+        let acceleration = (1. / self.mass) * self.net_force + gravity;
         self.velocity += acceleration * dt;
         self.position += self.velocity * dt;
-
-        println!("{0}", self.velocity);
 
         let angular_acceleration = self.moment / self.inertia;
         self.angular_velocity += angular_acceleration * dt;
@@ -86,5 +84,21 @@ impl Body {
         if let Some(collider) = &self.collider {
             collider.draw(&self.get_transform(), handle, Color::WHITE);
         }
+    }
+
+    pub fn is_static(&self) -> bool {
+        self.is_static
+    }
+
+    pub fn apply_impulse(&mut self, impulse: Vec2) {
+        self.velocity += (1. / self.mass) * impulse;
+    }
+
+    pub fn collider(&self) -> Option<&Polygon> {
+        self.collider.as_ref()
+    }
+
+    pub fn collider_mut(&mut self) -> &mut Option<Polygon> {
+        &mut self.collider
     }
 }

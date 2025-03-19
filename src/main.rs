@@ -1,5 +1,6 @@
 use body::Body;
 use collision_info::CollisionInfo;
+use constraints::Constraint;
 use raylib::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -11,28 +12,11 @@ use std::{
 };
 mod body;
 mod collision_info;
+mod constraints;
 mod plane;
 mod polygon;
-use macroquad::prelude::*;
 
-// HACK: Left off here, migrating to macroquad for nicer windows and even less thinking about
-// rendering (Look at how simple the framework is, me when proc macros are crazy)
-#[macroquad::main("BasicShapes")]
-async fn main() {
-    loop {
-        clear_background(RED);
-
-        draw_line(40.0, 40.0, 100.0, 200.0, 15.0, BLUE);
-        draw_rectangle(screen_width() / 2.0 - 60.0, 100.0, 120.0, 60.0, GREEN);
-        draw_circle(screen_width() - 30.0, screen_height() - 30.0, 15.0, YELLOW);
-
-        draw_text("IT WORKS!", 20.0, 20.0, 30.0, DARKGRAY);
-
-        next_frame().await
-    }
-}
-
-fn old_main() {
+fn main() {
     let config_file = fs::read_to_string("./config.json")
         .expect("There should be a config file at the root of the project.");
 
@@ -61,6 +45,7 @@ pub struct Engine {
 impl Engine {
     fn run(config: EngineConfig) {
         let (handle, thread) = raylib::init()
+            .resizable()
             .size(config.display_width, config.display_height)
             .title("Physics Jank")
             .build();
@@ -113,33 +98,56 @@ impl Engine {
 
     fn check_collisions(&mut self, dt: f32) {
         let length = self.bodies.len();
-        for (i, body) in self.bodies[0..length - 1].iter().enumerate() {
-            for other_body in &self.bodies[i + 1..length] {
-                let sat_output;
-                {
-                    let body = (**body).borrow_mut();
-                    let other_body = (**other_body).borrow_mut();
+        for (i, body_cell) in self.bodies[0..length - 1].iter().enumerate() {
+            for other_body_cell in &self.bodies[i + 1..length] {
+                let body = (**body_cell).borrow_mut();
+                let other_body = (**other_body_cell).borrow_mut();
+                let sat_output = body.check_collision(&other_body, dt);
 
-                    sat_output = body.check_collision(&other_body, dt);
-                }
+                if let Some((is_reference, normal, penetration)) = sat_output {
+                    let (incident_body, reference_body) = if is_reference {
+                        (body_cell, other_body_cell)
+                    } else {
+                        (other_body_cell, body_cell)
+                    };
 
-                if let Some(sat_output) = sat_output {
-                    let normal = sat_output.normalize();
-                    let penetration = sat_output.magnitude();
                     self.collisions.push(CollisionInfo::new(
                         normal,
                         penetration,
-                        body.clone(),
-                        other_body.clone(),
+                        incident_body.clone(),
+                        reference_body.clone(),
                     ));
                 }
             }
         }
     }
 
-    fn resolve_collisions(&mut self, _dt: f32) {
-        // TODO: implement the collision resolution algorithm here (read the docs you bookmarked)
-        for _collision in self.collisions.iter() {}
+    // TODO: implement the collision resolution algorithm here (read the docs you bookmarked)
+    fn resolve_collisions(&mut self, dt: f32) {
+        // Generating constraints where appropriate
+        let mut constraints: Vec<Box<dyn Constraint>> = vec![];
+
+        for collision in self.collisions.iter_mut() {
+            constraints.push(collision.generate_constraint());
+        }
+        self.collisions.clear();
+
+        // Solving the constraints
+        // TODO: Make max iterations a field that can be edited in the engine config file
+        let iteration_max = 10000;
+        if iteration_max <= 0 {
+            // Guard against 0 iterations (shouldn't be the value to use but me when I don't crash,
+            // its lovely)
+            dbg!("Iteration maximum shuold be > 0");
+            return;
+        }
+
+        let solver_dt = dt / (iteration_max as f32);
+        for _ in 0..iteration_max {
+            for constraint in constraints.iter_mut() {
+                constraint.solve(solver_dt);
+            }
+        }
     }
 
     fn integrate(&mut self, dt: f32) {
@@ -150,8 +158,6 @@ impl Engine {
     }
 
     fn draw(&mut self) {
-        // TODO: Make the world scale a little bit better so that values don't need to be massive
-
         // TODO: Make the colors nicer to look at so that I don't have a stroke when debugging this
         // for 5 hours straight (probs use Rose Pine colors for the background and shapes).
         let draw = &mut self.handle.begin_drawing(&self.thread);

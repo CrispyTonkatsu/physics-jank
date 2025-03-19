@@ -17,7 +17,10 @@ pub struct Polygon {
 }
 
 impl Polygon {
-    pub fn check_collision(&self, other: &Polygon, _dt: f32) -> Option<Vec2> {
+    /// This function will perform the SAT test with both shapes and return the data of the
+    /// collision. This will be the raw data such that it can be fit into a struct afterwards.
+    /// Return data = (caller_is_reference_face, normal, penetration)
+    pub fn check_collision(&self, other: &Polygon, _dt: f32) -> Option<(bool, Vec2, f32)> {
         let query = self.query_faces(other);
         if query.1 > 0. {
             return None;
@@ -28,10 +31,18 @@ impl Polygon {
             return None;
         }
 
-        if query.1 > query_other.1 {
-            Some(self.get_plane(query.0).get_normal().normalize() * query.1)
+        if query.1 < query_other.1 {
+            Some((
+                true,
+                self.get_plane(query.0).get_normal().normalize(),
+                query.1,
+            ))
         } else {
-            Some(other.get_plane(query_other.0).get_normal().normalize() * query_other.1)
+            Some((
+                false,
+                other.get_plane(query_other.0).get_normal().normalize(),
+                query_other.1,
+            ))
         }
     }
 
@@ -62,6 +73,27 @@ impl Polygon {
             })
             .copied()
             .unwrap_or(vec2(0.0, 0.0))
+    }
+
+    pub fn get_significant_face_with_index(&self, normal: Vec2) -> (Plane, usize) {
+        let support_point = self.map_support(normal);
+        let mut max_plane_dot: f32 = 0.;
+        let mut max_plane_index = 0;
+
+        for i in 0..self.points.len() {
+            let plane = self.get_plane(i);
+
+            if plane.is_made_of(&support_point) && plane.get_normal().dot(&normal) > max_plane_dot {
+                max_plane_dot = plane.get_normal().dot(&normal);
+                max_plane_index = i;
+            }
+        }
+
+        (self.get_plane(max_plane_index), max_plane_index)
+    }
+
+    pub fn get_significant_face(&self, normal: Vec2) -> Plane {
+        self.get_significant_face_with_index(normal).0
     }
 
     pub fn get_plane(&self, index: usize) -> Plane {
@@ -108,5 +140,9 @@ impl Polygon {
 
         handle.draw_line_strip(&rpoints, color);
         handle.draw_line_v(rpoints[0], rpoints[self.points.len() - 1], color);
+    }
+
+    pub fn point_count(&self) -> usize {
+        self.points.len()
     }
 }
