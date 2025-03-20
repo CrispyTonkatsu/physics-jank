@@ -101,4 +101,9 @@ impl Body {
     pub fn collider_mut(&mut self) -> &mut Option<Polygon> {
         &mut self.collider
     }
+
+    pub fn collider_in_world(&self) -> Option<Polygon> {
+        self.collider()
+            .map(|collider| collider.get_in_world(&self.get_transform()))
+    }
 }

@@ -31,7 +31,7 @@ impl Polygon {
             return None;
         }
 
-        if query.1 < query_other.1 {
+        if query.1 > query_other.1 {
             Some((
                 true,
                 self.get_plane(query.0).get_normal().normalize(),

@@ -1,18 +1,14 @@
 use body::Body;
 use collision_info::CollisionInfo;
 use constraints::Constraint;
-use nalgebra_glm::{vec2, Vec2};
-use raylib::{
-    ffi::{IsKeyDown, IsKeyPressed},
-    prelude::*,
-};
+use nalgebra_glm::Vec2;
+use raylib::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{
     borrow::BorrowMut,
     cell::RefCell,
     fs::{self},
     rc::Rc,
-    time::Instant,
 };
 mod body;
 mod collision_info;
@@ -196,8 +192,12 @@ impl Engine {
             body.position += Vec2::new(1000., 0.) * dt;
         }
 
-        if handle.is_key_down(KeyboardKey::KEY_SPACE) {
+        if handle.is_key_down(KeyboardKey::KEY_J) {
             body.rotation += 1.5 * dt;
+        }
+
+        if handle.is_key_down(KeyboardKey::KEY_K) {
+            body.rotation += -1.5 * dt;
         }
     }
 }

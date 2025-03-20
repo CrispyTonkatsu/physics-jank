@@ -1,7 +1,10 @@
 use std::{cell::RefCell, rc::Rc};
 
 use nalgebra_glm::Vec2;
-use raylib::prelude::{RaylibDrawHandle, RaylibMode2D};
+use raylib::{
+    color::Color,
+    prelude::{RaylibDrawHandle, RaylibMode2D},
+};
 
 use crate::{body::Body, collision_info::ContactPoints};
 
@@ -43,7 +46,18 @@ impl Constraint for CollisionConstraint {
     fn solve(&mut self, _dt: f32) {}
 
     fn draw(&self, handle: &mut RaylibMode2D<RaylibDrawHandle>) {
-        let transform = (*self.reference_body.borrow()).get_transform();
-        self.manifold.draw(handle, &transform);
+        self.manifold.draw(handle);
+
+        (*self.incident_body.borrow_mut())
+            .collider_in_world()
+            .expect("Generate manifold was somehow called for a body without a polygon.")
+            .get_significant_face(self.normal)
+            .draw(handle, &Color::RED);
+
+        (*self.reference_body.borrow_mut())
+            .collider_in_world()
+            .expect("Generate manifold was somehow called for a body without a polygon.")
+            .get_significant_face(-self.normal)
+            .draw(handle, &Color::BLUE);
     }
 }

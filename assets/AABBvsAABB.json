@@ -7,7 +7,7 @@
 		"rotation": 0,
 		"scale": [
 			100,
-			100
+			50
 		],
 		"collider_file": "StdSquare.json",
 		"mass": 1,
@@ -25,7 +25,7 @@
 			100,
 			100
 		],
-		"collider_file": "Trapezoid.json",
+		"collider_file": "StdSquare.json",
 		"mass": 1,
 		"inertia": 1,
 		"restitution": 1,

@@ -1,4 +1,9 @@
 use nalgebra_glm::{vec2, Vec2};
+use raylib::{
+    color::Color,
+    math::Vector2,
+    prelude::{RaylibDraw, RaylibDrawHandle, RaylibMode2D},
+};
 
 pub struct Plane {
     start: Vec2,
@@ -69,5 +74,14 @@ impl Plane {
 
     pub fn end(&self) -> Vec2 {
         self.end
+    }
+
+    pub fn draw(&self, handle: &mut RaylibMode2D<RaylibDrawHandle>, color: &Color) {
+        handle.draw_line_ex(
+            Vector2::new(self.start.x, self.start.y),
+            Vector2::new(self.end.x, self.end.y),
+            5.,
+            color,
+        );
     }
 }
