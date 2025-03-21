@@ -1,3 +1,5 @@
+use std::num;
+
 use nalgebra_glm::{rotation2d, scaling2d, translation2d, vec2, vec3, Mat3x3, Vec2};
 use raylib::{
     color::Color,
@@ -83,7 +85,9 @@ impl Polygon {
         for i in 0..self.points.len() {
             let plane = self.get_plane(i);
 
-            if plane.is_made_of(&support_point) && plane.get_normal().dot(&normal) > max_plane_dot {
+            if plane.is_made_of(&support_point)
+                && plane.get_normal().dot(&normal).abs() > max_plane_dot.abs()
+            {
                 max_plane_dot = plane.get_normal().dot(&normal);
                 max_plane_index = i;
             }
