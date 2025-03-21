@@ -1,7 +1,7 @@
 use std::fs;
 
 use nalgebra_glm::{rotation2d, scaling2d, translation2d, vec2};
-use nalgebra_glm::{Mat3x3, Vec2};
+use nalgebra_glm::{Mat3x3, Vec2, Vec3};
 use raylib::color::Color;
 use raylib::prelude::{RaylibDrawHandle, RaylibMode2D};
 use serde::{Deserialize, Serialize};
@@ -30,6 +30,8 @@ pub struct Body {
     net_force: Vec2,
     // Angular Runtime Physics Variables
     #[serde(default)]
+    center_of_gravity: Vec2,
+    #[serde(default)]
     angular_velocity: f32,
     #[serde(default)]
     moment: f32,
@@ -52,7 +54,7 @@ impl Body {
         }
 
         // TODO: Make gravity changeable
-        let gravity = vec2(0., 9.81) * 10000000000.;
+        let gravity = vec2(0., 9.81) * 0.;
 
         let acceleration = (1. / self.mass) * self.net_force + gravity;
         self.velocity += acceleration * dt;
@@ -91,7 +93,11 @@ impl Body {
     }
 
     pub fn apply_impulse(&mut self, impulse: Vec2) {
-        self.velocity += (1. / self.mass) * impulse;
+        self.velocity += impulse;
+    }
+
+    pub fn apply_angular_impulse(&mut self, impulse: f32) {
+        self.angular_velocity += impulse;
     }
 
     pub fn collider(&self) -> Option<&Polygon> {
@@ -105,5 +111,28 @@ impl Body {
     pub fn collider_in_world(&self) -> Option<Polygon> {
         self.collider()
             .map(|collider| collider.get_in_world(&self.get_transform()))
+    }
+
+    pub fn velocity(&self) -> Vec2 {
+        self.velocity
+    }
+
+    pub fn angular_velocity(&self) -> f32 {
+        self.angular_velocity
+    }
+
+    pub fn center_of_gravity(&self) -> Vec2 {
+        // NOTE: this only works for center of gravity at Vec2::zero, the rotations need to be done
+        // about the center of gravity for it to be nice with this
+        (self.get_transform() * Vec3::new(self.center_of_gravity.x, self.center_of_gravity.y, 1.))
+            .xy()
+    }
+
+    pub fn mass(&self) -> f32 {
+        self.mass
+    }
+
+    pub fn inertia(&self) -> f32 {
+        self.inertia
     }
 }

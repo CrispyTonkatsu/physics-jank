@@ -1,7 +1,7 @@
 use body::Body;
 use collision_info::CollisionInfo;
 use constraints::Constraint;
-use nalgebra_glm::Vec2;
+use nalgebra_glm::{vec2, Vec2};
 use raylib::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -68,11 +68,13 @@ impl Engine {
         while !engine.handle.window_should_close() {
             let delta_time = engine.handle.get_frame_time();
 
-            engine.check_collisions(delta_time);
-            //engine.resolve_collisions(delta_time);
-            //engine.integrate(delta_time);
             engine.test_controller(delta_time);
+            engine.integrate(delta_time);
+            engine.check_collisions(delta_time);
+            engine.resolve_collisions(delta_time);
             engine.draw();
+
+            engine.collisions.clear();
         }
     }
 
@@ -103,9 +105,9 @@ impl Engine {
 
                 if let Some((is_reference, normal, penetration)) = sat_output {
                     let (incident_body, reference_body) = if is_reference {
-                        (body_cell, other_body_cell)
-                    } else {
                         (other_body_cell, body_cell)
+                    } else {
+                        (body_cell, other_body_cell)
                     };
 
                     self.collisions.push(CollisionInfo::new(
@@ -127,11 +129,12 @@ impl Engine {
         for collision in self.collisions.iter_mut() {
             constraints.push(collision.generate_constraint());
         }
-        self.collisions.clear();
+        //self.collisions.clear();
 
         // Solving the constraints
         // TODO: Make max iterations a field that can be edited in the engine config file
-        let iteration_max = 10000;
+        let iteration_max = 100; // About a 1000 is a good number for 2 bodies so that is
+                                 // nice
         if iteration_max <= 0 {
             // Guard against 0 iterations (shouldn't be the value to use but me when I don't crash,
             // its lovely)
@@ -176,28 +179,36 @@ impl Engine {
         let handle = &self.handle;
         let mut body = (*self.bodies[0]).borrow_mut();
 
+        let mut impulse = vec2(0., 0.);
+
         if handle.is_key_down(KeyboardKey::KEY_W) {
-            body.position += Vec2::new(0., -1000.) * dt;
+            impulse += Vec2::new(0., -1.);
         }
 
         if handle.is_key_down(KeyboardKey::KEY_S) {
-            body.position += Vec2::new(0., 1000.) * dt;
+            impulse += Vec2::new(0., 1.);
         }
 
         if handle.is_key_down(KeyboardKey::KEY_A) {
-            body.position += Vec2::new(-1000., 0.) * dt;
+            impulse += Vec2::new(-1., 0.);
         }
 
         if handle.is_key_down(KeyboardKey::KEY_D) {
-            body.position += Vec2::new(1000., 0.) * dt;
+            impulse += Vec2::new(1., 0.);
         }
 
+        body.apply_impulse(impulse);
+
+        let mut impulse = 0.;
+
         if handle.is_key_down(KeyboardKey::KEY_J) {
-            body.rotation += 1.5 * dt;
+            impulse += 0.05;
         }
 
         if handle.is_key_down(KeyboardKey::KEY_K) {
-            body.rotation += -1.5 * dt;
+            impulse += -0.05;
         }
+
+        body.apply_angular_impulse(impulse);
     }
 }

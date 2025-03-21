@@ -76,6 +76,10 @@ impl Plane {
         self.end
     }
 
+    pub fn midpoint(&self) -> Vec2 {
+        (self.start() + self.end()) * (1. / 2.)
+    }
+
     pub fn draw(&self, handle: &mut RaylibMode2D<RaylibDrawHandle>, color: &Color) {
         handle.draw_line_ex(
             Vector2::new(self.start.x, self.start.y),

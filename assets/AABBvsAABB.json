@@ -6,19 +6,24 @@
 		],
 		"rotation": 0,
 		"scale": [
-			100,
-			50
+			50,
+			100
 		],
 		"collider_file": "StdSquare.json",
 		"mass": 1,
 		"inertia": 1,
 		"restitution": 1,
-		"friction": 1
+		"friction": 1,
+		"is_static": false
 	},
 	{
 		"position": [
 			500.0,
 			800.0
+		],
+		"velocity": [
+			0.0,
+			-100.0
 		],
 		"rotation": 0,
 		"scale": [
@@ -30,6 +35,6 @@
 		"inertia": 1,
 		"restitution": 1,
 		"friction": 1,
-		"is_static": true
+		"is_static": false
 	}
 ]
