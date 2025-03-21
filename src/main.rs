@@ -197,7 +197,9 @@ impl Engine {
             impulse += Vec2::new(1., 0.);
         }
 
-        body.apply_impulse(impulse);
+        if impulse.magnitude() > 0. {
+            body.apply_impulse(impulse.normalize());
+        }
 
         let mut impulse = 0.;
 

@@ -96,6 +96,10 @@ impl Constraint for CollisionConstraint {
     // This is literally moon runes but also it is the nicest way to display sparse matrix
     // multiplication without making a literal wall of text
     fn solve(&mut self, dt: f32) {
+        // HACK: left off here, try to solve both points separately (that could be the issue rn
+        // where energy is added) (look at box2d-lite)
+        // if that doesnt work then try to ignore the collision if it is already colliding
+
         let (ja, jb, jc, jd) = self.get_jacobian();
         let (va, ra, vb, rb) = self.get_velocities();
         let jv = (ja.dot(&va)) + (jb * ra) + (jc.dot(&vb)) + (jd * rb);
@@ -104,12 +108,12 @@ impl Constraint for CollisionConstraint {
         let effective_mass = 1. / (ma + (jb * jb * ia) + mb + (jd * jd * ib));
 
         // TODO: Insert b here where it will account for the coefficient of restitution
-        let b = 0.;
+        let b = -(0.01 / dt) * self.penetration;
 
         let lambda = effective_mass * (-jv + b);
 
         self.old_lambda = self.total_lambda;
-        self.total_lambda = f32::max(0., self.total_lambda + lambda);
+        self.total_lambda = f32::clamp(self.total_lambda + lambda, 0., f32::MAX);
 
         let lambda = self.total_lambda - self.old_lambda;
 
