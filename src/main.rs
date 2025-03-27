@@ -69,9 +69,9 @@ impl Engine {
             let delta_time = engine.handle.get_frame_time();
 
             engine.test_controller(delta_time);
-            engine.integrate(delta_time);
             engine.check_collisions(delta_time);
             engine.resolve_collisions(delta_time);
+            engine.integrate(delta_time);
             engine.draw();
 
             engine.collisions.clear();
@@ -129,7 +129,7 @@ impl Engine {
         for collision in self.collisions.iter_mut() {
             constraints.push(collision.generate_constraint());
         }
-        //self.collisions.clear();
+        self.collisions.clear();
 
         // Solving the constraints
         // TODO: Make max iterations a field that can be edited in the engine config file

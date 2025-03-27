@@ -85,7 +85,7 @@ impl CollisionConstraint {
         } else if let Some(point) = self.manifold.get_point() {
             point
         } else {
-            panic!("All manifolds should have either 1 or 2 points")
+            return Vec2::new(0., 0.); //panic!("All manifolds should have either 1 or 2 points")
         };
 
         point - body.center_of_gravity()
@@ -96,9 +96,8 @@ impl Constraint for CollisionConstraint {
     // This is literally moon runes but also it is the nicest way to display sparse matrix
     // multiplication without making a literal wall of text
     fn solve(&mut self, dt: f32) {
-        // HACK: left off here, try to solve both points separately (that could be the issue rn
-        // where energy is added) (look at box2d-lite)
-        // if that doesnt work then try to ignore the collision if it is already colliding
+        // HACK: left off here, look at Box2d lite and make this so much easier to solve without
+        // dying inside
 
         let (ja, jb, jc, jd) = self.get_jacobian();
         let (va, ra, vb, rb) = self.get_velocities();
