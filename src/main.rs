@@ -1,4 +1,5 @@
 use body::Body;
+use catppuccin::ColorName;
 use collision_constraint::CollisionConstraint;
 use constraints::Constraint;
 use nalgebra_glm::{vec2, Vec2};
@@ -18,6 +19,8 @@ mod constraints;
 mod contact_point;
 mod plane;
 mod polygon;
+
+mod color;
 
 // NOTE: Main will not be working for a bit given certain changes will be done to the structure of
 // the collision data generated
@@ -183,7 +186,7 @@ impl Engine {
 
     fn draw(&mut self) {
         let draw = &mut self.handle.begin_drawing(&self.thread);
-        draw.clear_background(Color::from_hex("192336").unwrap());
+        draw.clear_background(color::get(ColorName::Base));
 
         let mut draw2d = draw.begin_mode2D(self.camera);
 

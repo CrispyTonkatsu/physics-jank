@@ -1,7 +1,8 @@
+use catppuccin::ColorName;
 use nalgebra_glm::Vec2;
-use raylib::{color::Color, ffi::Vector2, prelude::RaylibDraw};
+use raylib::prelude::*;
 
-use crate::{body::Body, plane::Plane};
+use crate::{body::Body, color, plane::Plane};
 
 /// This is the way that each contact point will identify itself with.
 #[derive(Clone)]
@@ -125,10 +126,17 @@ impl ContactPoint {
         &self,
         handle: &mut raylib::prelude::RaylibMode2D<raylib::prelude::RaylibDrawHandle>,
     ) {
-        self.incident_plane.draw(handle, &Color::RED);
-        self.reference_plane.draw(handle, &Color::BLUE);
+        self.incident_plane
+            .draw(handle, &color::get(ColorName::Blue));
+        self.reference_plane
+            .draw(handle, &color::get(ColorName::Yellow));
 
-        handle.draw_circle(self.point.x as i32, self.point.y as i32, 10., Color::PLUM);
+        handle.draw_circle(
+            self.point.x as i32,
+            self.point.y as i32,
+            10.,
+            color::get(ColorName::Green),
+        );
 
         let end_pos = self.point + self.normal * -self.penetration;
         let end_pos = Vector2 {
@@ -143,7 +151,7 @@ impl ContactPoint {
             },
             end_pos,
             3.,
-            Color::PALEGREEN,
+            color::get(ColorName::Peach),
         );
     }
 

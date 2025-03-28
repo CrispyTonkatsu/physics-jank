@@ -1,9 +1,5 @@
 use nalgebra_glm::{vec2, Vec2};
-use raylib::{
-    color::Color,
-    math::Vector2,
-    prelude::{RaylibDraw, RaylibDrawHandle, RaylibMode2D},
-};
+use raylib::prelude::*;
 
 #[derive(Clone)]
 pub struct Plane {

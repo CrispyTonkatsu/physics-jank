@@ -6,6 +6,7 @@ use raylib::color::Color;
 use raylib::prelude::{RaylibDrawHandle, RaylibMode2D};
 use serde::{Deserialize, Serialize};
 
+use crate::color;
 use crate::polygon::Polygon;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -84,7 +85,11 @@ impl Body {
 
     pub fn draw(&self, handle: &mut RaylibMode2D<RaylibDrawHandle>) {
         if let Some(collider) = &self.collider {
-            collider.draw(&self.get_transform(), handle, Color::WHITE);
+            collider.draw(
+                &self.get_transform(),
+                handle,
+                color::get(catppuccin::ColorName::Flamingo),
+            );
         }
     }
 
