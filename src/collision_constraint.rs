@@ -8,8 +8,6 @@ use crate::{
 };
 
 pub struct CollisionConstraint {
-    normal: Vec2,
-    penetration: f32,
     manifold: Vec<ContactPoint>,
 
     incident_body: Rc<RefCell<Body>>,
@@ -25,32 +23,30 @@ impl Constraint for CollisionConstraint {
         let bias_factor = 0.2;
 
         for contact in self.manifold.iter_mut() {
-            todo!("Implement the preparing of the math")
+            //todo!("Implement the preparing of the math")
         }
     }
 
     fn solve(&mut self, dt: f32) {
         for contact in self.manifold.iter_mut() {
-            todo!("Implement the applying of impulses")
+            //todo!("Implement the applying of impulses")
         }
     }
 
     fn draw(&self, handle: &mut raylib::prelude::RaylibMode2D<raylib::prelude::RaylibDrawHandle>) {
-        todo!("Drawing of collision stuff not yet implemented")
+        for contact in self.manifold.iter() {
+            contact.draw(handle);
+        }
     }
 }
 
 impl CollisionConstraint {
     pub fn new(
-        normal: Vec2,
-        penetration: f32,
         manifold: Vec<ContactPoint>,
         incident_body: Rc<RefCell<Body>>,
         reference_body: Rc<RefCell<Body>>,
     ) -> Self {
         Self {
-            normal,
-            penetration,
             manifold,
             incident_body,
             reference_body,
@@ -59,7 +55,9 @@ impl CollisionConstraint {
         }
     }
 
-    pub fn update_manifold(&self, manifold: Vec<ContactPoint>) {}
+    pub fn update_manifold(&self, manifold: Vec<ContactPoint>) {
+        todo!("Implementing the comparison of manifolds such that warm starting takes place")
+    }
 
     pub fn generate_manifold(
         normal: Vec2,

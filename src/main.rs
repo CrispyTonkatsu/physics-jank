@@ -20,6 +20,8 @@ mod polygon;
 
 // NOTE: Main will not be working for a bit given certain changes will be done to the structure of
 // the collision data generated
+//
+// NOTE: Also, remove all the notes when you are sure it works
 
 fn main() {
     let config_file = fs::read_to_string("./config.json")
@@ -108,11 +110,11 @@ impl Engine {
         let length = self.bodies.len();
         for (i, body_cell) in self.bodies[0..length - 1].iter().enumerate() {
             for (j, other_body_cell) in self.bodies[i + 1..length].iter().enumerate() {
-                let body = (**body_cell).borrow_mut();
-                let other_body = (**other_body_cell).borrow_mut();
+                let body = (**body_cell).borrow();
+                let other_body = (**other_body_cell).borrow();
                 let sat_output = body.check_collision(&other_body, dt);
 
-                if let Some((is_reference, normal, penetration)) = sat_output {
+                if let Some((is_reference, normal, ..)) = sat_output {
                     let (incident_body, reference_body) = if is_reference {
                         (other_body_cell, body_cell)
                     } else {
@@ -127,15 +129,12 @@ impl Engine {
 
                     match self.collision_map.get_mut(&(i, j)) {
                         Some(constraint) => {
-                            // TODO: Update contacts such that there is warm starting in the engine
                             constraint.update_manifold(new_manifold);
                         }
                         None => {
                             self.collision_map.insert(
                                 (i, j),
                                 CollisionConstraint::new(
-                                    normal,
-                                    penetration,
                                     new_manifold,
                                     incident_body.clone(),
                                     reference_body.clone(),
@@ -143,16 +142,20 @@ impl Engine {
                             );
                         }
                     }
+                } else {
+                    // Remove collisions that did not happen
+                    self.collision_map.remove(&(i, j));
                 }
-
-                // Remove collisions that did not happen
-                self.collision_map.remove(&(i, j));
             }
         }
     }
 
     fn resolve_collisions(&mut self, dt: f32) {
         let inv_dt = 1. / dt;
+        for general_constraint in self.general_constraints.iter_mut() {
+            general_constraint.pre_solve(inv_dt);
+        }
+
         for (.., contact_constraint) in self.collision_map.iter_mut() {
             contact_constraint.pre_solve(inv_dt);
         }

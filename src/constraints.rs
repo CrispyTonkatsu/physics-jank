@@ -1,5 +1,9 @@
 use nalgebra_glm::Vec2;
-use raylib::prelude::{RaylibDrawHandle, RaylibMode2D};
+use raylib::{
+    color::Color,
+    ffi::Vector2,
+    prelude::{RaylibDraw, RaylibDrawHandle, RaylibMode2D},
+};
 
 use crate::plane::Plane;
 
@@ -67,6 +71,32 @@ impl ContactPoint {
             incident_plane: Plane::default(),
             reference_plane: Plane::default(),
         }
+    }
+
+    pub fn draw(
+        &self,
+        handle: &mut raylib::prelude::RaylibMode2D<raylib::prelude::RaylibDrawHandle>,
+    ) {
+        handle.draw_circle(self.point.x as i32, self.point.y as i32, 10., Color::PLUM);
+
+        let end_pos = self.point + self.normal * -self.penetration * 100.;
+        let end_pos = Vector2 {
+            x: end_pos.x,
+            y: end_pos.y,
+        };
+
+        handle.draw_line_ex(
+            Vector2 {
+                x: self.point.x,
+                y: self.point.y,
+            },
+            end_pos,
+            3.,
+            Color::PALEGREEN,
+        );
+
+        self.incident_plane.draw(handle, &Color::RED);
+        self.reference_plane.draw(handle, &Color::BLUE);
     }
 }
 
