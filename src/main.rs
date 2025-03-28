@@ -165,11 +165,11 @@ impl Engine {
         // Solving the constraints
         for _ in 0..self.iteration_count {
             for constraint in self.general_constraints.iter_mut() {
-                constraint.solve(dt);
+                constraint.solve();
             }
 
             for (.., constraint) in self.collision_map.iter_mut() {
-                constraint.solve(dt);
+                constraint.solve();
             }
         }
     }

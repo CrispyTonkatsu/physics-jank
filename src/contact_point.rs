@@ -115,10 +115,10 @@ impl ContactPoint {
         let cross = |a: Vec2, b: Vec2| -> f32 { a.x * b.y - a.y * b.x };
 
         incident_body.apply_impulse(impulse);
-        incident_body.apply_angular_impulse(cross(impulse, self.to_incident()));
+        incident_body.apply_angular_impulse(cross(self.to_incident(), impulse));
 
         reference_body.apply_impulse(-impulse);
-        reference_body.apply_angular_impulse(cross(-impulse, self.to_reference()));
+        reference_body.apply_angular_impulse(cross(self.to_reference(), -impulse));
     }
 
     pub fn draw(

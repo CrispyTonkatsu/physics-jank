@@ -24,7 +24,6 @@ impl Constraint for CollisionConstraint {
         let mut reference_body = self.reference_body.borrow_mut();
 
         for contact in self.manifold.iter_mut() {
-            //todo!("Implement the preparing of the math")
             contact.set_to_incident(contact.point() - incident_body.center_of_gravity());
             contact.set_to_reference(contact.point() - reference_body.center_of_gravity());
 
@@ -42,7 +41,7 @@ impl Constraint for CollisionConstraint {
                     * (contact.to_reference().norm_squared()
                         - (reference_normal_mass * reference_normal_mass));
 
-            contact.set_effective_mass(net_normal_mass);
+            contact.set_effective_mass(1. / net_normal_mass);
 
             // Tangent mass
             let tangent = Vec2::new(-contact.normal().y, contact.normal().x);
@@ -57,7 +56,7 @@ impl Constraint for CollisionConstraint {
                     * (contact.to_reference().norm_squared()
                         - (reference_tangent_mass * reference_tangent_mass));
 
-            contact.set_tangent_mass(net_tangent_mass);
+            contact.set_tangent_mass(1. / net_tangent_mass);
 
             // Setting the bias
             contact.set_bias(
@@ -69,11 +68,13 @@ impl Constraint for CollisionConstraint {
         }
     }
 
-    fn solve(&mut self, dt: f32) {
+    fn solve(&mut self) {
         let mut incident_body = self.incident_body.borrow_mut();
         let mut reference_body = self.reference_body.borrow_mut();
 
         let angular_to_tangent = |a: f32, b: Vec2| -> Vec2 { Vec2::new(-a * b.y, a * b.x) };
+
+        let cross = |a: Vec2, b: Vec2| -> f32 { a.x * b.y - a.y * b.x };
 
         for contact in self.manifold.iter_mut() {
             let relative_velocity = incident_body.velocity()
@@ -88,11 +89,15 @@ impl Constraint for CollisionConstraint {
             let to_apply = (contact.accumulated_normal_impulse() + normal_impulse).max(0.);
             contact.set_accumulated_normal_impulse(to_apply);
 
-            let to_apply = contact.accumulated_normal_impulse() - to_apply;
+            let to_apply = (contact.accumulated_normal_impulse() - to_apply) * contact.normal();
 
             // Applying the normal impulse
-            incident_body.apply_impulse(to_apply * contact.normal());
-            reference_body.apply_impulse(-to_apply * contact.normal());
+
+            incident_body.apply_impulse(to_apply);
+            incident_body.apply_angular_impulse(cross(contact.to_incident(), to_apply));
+
+            reference_body.apply_impulse(-to_apply);
+            reference_body.apply_angular_impulse(cross(contact.to_reference(), -to_apply));
         }
     }
 
