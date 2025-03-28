@@ -129,10 +129,34 @@ impl Body {
     }
 
     pub fn mass(&self) -> f32 {
-        self.mass
+        if self.is_static() {
+            self.mass
+        } else {
+            0.
+        }
     }
 
     pub fn inertia(&self) -> f32 {
-        self.inertia
+        if self.is_static() {
+            0.
+        } else {
+            self.inertia
+        }
+    }
+
+    pub fn inv_mass(&self) -> f32 {
+        if self.is_static() {
+            1. / self.mass
+        } else {
+            0.
+        }
+    }
+
+    pub fn inv_inertia(&self) -> f32 {
+        if self.is_static() {
+            1. / self.inertia
+        } else {
+            0.
+        }
     }
 }

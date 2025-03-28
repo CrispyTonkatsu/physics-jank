@@ -147,4 +147,16 @@ impl Polygon {
     pub fn point_count(&self) -> usize {
         self.points.len()
     }
+
+    pub fn increment_side(&self, index: usize) -> usize {
+        (index + 1) % self.point_count()
+    }
+
+    pub fn decrement_side(&self, index: usize) -> usize {
+        if index == 0 {
+            self.point_count() - 1
+        } else {
+            index - 1
+        }
+    }
 }

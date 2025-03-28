@@ -15,6 +15,7 @@ use std::{
 mod body;
 mod collision_constraint;
 mod constraints;
+mod contact_point;
 mod plane;
 mod polygon;
 
