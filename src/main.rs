@@ -1,5 +1,5 @@
 use body::Body;
-use collision_info::CollisionInfo;
+use collision_constraint::CollisionConstraint;
 use constraints::Constraint;
 use nalgebra_glm::{vec2, Vec2};
 use raylib::prelude::*;
@@ -7,14 +7,19 @@ use serde::{Deserialize, Serialize};
 use std::{
     borrow::BorrowMut,
     cell::RefCell,
+    collections::HashMap,
     fs::{self},
     rc::Rc,
 };
+
 mod body;
-mod collision_info;
+mod collision_constraint;
 mod constraints;
 mod plane;
 mod polygon;
+
+// NOTE: Main will not be working for a bit given certain changes will be done to the structure of
+// the collision data generated
 
 fn main() {
     let config_file = fs::read_to_string("./config.json")
@@ -31,15 +36,19 @@ pub struct EngineConfig {
     setup_file: String,
     display_width: i32,
     display_height: i32,
+    iteration_count: usize,
 }
 
-#[derive(Debug)]
 pub struct Engine {
     handle: RaylibHandle,
     thread: RaylibThread,
     camera: Camera2D,
+
     bodies: Vec<Rc<RefCell<Body>>>,
-    collisions: Vec<CollisionInfo>,
+
+    general_constraints: Vec<Box<dyn Constraint>>,
+    collision_map: HashMap<(usize, usize), CollisionConstraint>,
+    iteration_count: usize,
 }
 
 impl Engine {
@@ -60,7 +69,9 @@ impl Engine {
                 zoom: 1.,
             },
             bodies: vec![],
-            collisions: vec![],
+            general_constraints: vec![],
+            collision_map: HashMap::default(),
+            iteration_count: config.iteration_count,
         };
 
         engine.load_simulation(config);
@@ -68,13 +79,11 @@ impl Engine {
         while !engine.handle.window_should_close() {
             let delta_time = engine.handle.get_frame_time();
 
-            engine.test_controller(delta_time);
             engine.check_collisions(delta_time);
+            engine.test_controller();
             engine.resolve_collisions(delta_time);
             engine.integrate(delta_time);
             engine.draw();
-
-            engine.collisions.clear();
         }
     }
 
@@ -98,7 +107,7 @@ impl Engine {
     fn check_collisions(&mut self, dt: f32) {
         let length = self.bodies.len();
         for (i, body_cell) in self.bodies[0..length - 1].iter().enumerate() {
-            for other_body_cell in &self.bodies[i + 1..length] {
+            for (j, other_body_cell) in self.bodies[i + 1..length].iter().enumerate() {
                 let body = (**body_cell).borrow_mut();
                 let other_body = (**other_body_cell).borrow_mut();
                 let sat_output = body.check_collision(&other_body, dt);
@@ -110,42 +119,52 @@ impl Engine {
                         (body_cell, other_body_cell)
                     };
 
-                    self.collisions.push(CollisionInfo::new(
+                    let new_manifold = CollisionConstraint::generate_manifold(
                         normal,
-                        penetration,
-                        incident_body.clone(),
-                        reference_body.clone(),
-                    ));
+                        &incident_body.borrow(),
+                        &reference_body.borrow(),
+                    );
+
+                    match self.collision_map.get_mut(&(i, j)) {
+                        Some(constraint) => {
+                            // TODO: Update contacts such that there is warm starting in the engine
+                            constraint.update_manifold(new_manifold);
+                        }
+                        None => {
+                            self.collision_map.insert(
+                                (i, j),
+                                CollisionConstraint::new(
+                                    normal,
+                                    penetration,
+                                    new_manifold,
+                                    incident_body.clone(),
+                                    reference_body.clone(),
+                                ),
+                            );
+                        }
+                    }
                 }
+
+                // Remove collisions that did not happen
+                self.collision_map.remove(&(i, j));
             }
         }
     }
 
-    // TODO: implement the collision resolution algorithm here (read the docs you bookmarked)
     fn resolve_collisions(&mut self, dt: f32) {
-        // Generating constraints where appropriate
-        let mut constraints: Vec<Box<dyn Constraint>> = vec![];
-
-        for collision in self.collisions.iter_mut() {
-            constraints.push(collision.generate_constraint());
+        let inv_dt = 1. / dt;
+        for (.., contact_constraint) in self.collision_map.iter_mut() {
+            contact_constraint.pre_solve(inv_dt);
         }
-        self.collisions.clear();
 
         // Solving the constraints
-        // TODO: Make max iterations a field that can be edited in the engine config file
-        let iteration_max = 100; // About a 1000 is a good number for 2 bodies so that is
-                                 // nice
-        if iteration_max <= 0 {
-            // Guard against 0 iterations (shouldn't be the value to use but me when I don't crash,
-            // its lovely)
-            dbg!("Iteration maximum shuold be > 0");
-            return;
-        }
+        for _ in 0..self.iteration_count {
+            for constraint in self.general_constraints.iter_mut() {
+                constraint.solve(dt);
+            }
 
-        let solver_dt = dt / (iteration_max as f32);
-        for _ in 0..iteration_max {
-            for constraint in constraints.iter_mut() {
-                constraint.solve(solver_dt);
+            for (.., constraint) in self.collision_map.iter_mut() {
+                constraint.solve(dt);
             }
         }
     }
@@ -158,8 +177,6 @@ impl Engine {
     }
 
     fn draw(&mut self) {
-        // TODO: Make the colors nicer to look at so that I don't have a stroke when debugging this
-        // for 5 hours straight (probs use Rose Pine colors for the background and shapes).
         let draw = &mut self.handle.begin_drawing(&self.thread);
         draw.clear_background(Color::from_hex("192336").unwrap());
 
@@ -169,13 +186,12 @@ impl Engine {
             body.borrow().draw(&mut draw2d);
         }
 
-        for collision in self.collisions.iter_mut() {
-            collision.generate_constraint().draw(&mut draw2d);
+        for (.., constraint) in self.collision_map.iter_mut() {
+            constraint.draw(&mut draw2d);
         }
-        self.collisions.clear();
     }
 
-    fn test_controller(&mut self, dt: f32) {
+    fn test_controller(&mut self) {
         let handle = &self.handle;
         let mut body = (*self.bodies[0]).borrow_mut();
 

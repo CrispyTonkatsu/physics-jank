@@ -5,12 +5,20 @@ use raylib::{
     prelude::{RaylibDraw, RaylibDrawHandle, RaylibMode2D},
 };
 
+#[derive(Clone)]
 pub struct Plane {
     start: Vec2,
     end: Vec2,
 }
 
 impl Plane {
+    pub fn default() -> Self {
+        Plane {
+            start: Vec2::default(),
+            end: Vec2::default(),
+        }
+    }
+
     pub fn new(start: Vec2, end: Vec2) -> Self {
         Plane { start, end }
     }

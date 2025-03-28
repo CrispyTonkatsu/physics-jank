@@ -1,5 +1,3 @@
-use std::num;
-
 use nalgebra_glm::{rotation2d, scaling2d, translation2d, vec2, vec3, Mat3x3, Vec2};
 use raylib::{
     color::Color,
