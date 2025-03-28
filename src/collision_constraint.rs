@@ -16,6 +16,7 @@ pub struct CollisionConstraint {
 }
 
 impl Constraint for CollisionConstraint {
+    // HACK: Left off here, going over the math to find the mistake related to rotations
     fn pre_solve(&mut self, inv_dt: f32) {
         let allowed_penetration = 0.01;
         let bias_factor = 0.2;
