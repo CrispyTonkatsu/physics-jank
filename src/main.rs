@@ -153,6 +153,7 @@ impl Engine {
 
     fn resolve_collisions(&mut self, dt: f32) {
         let inv_dt = 1. / dt;
+
         for general_constraint in self.general_constraints.iter_mut() {
             general_constraint.pre_solve(inv_dt);
         }

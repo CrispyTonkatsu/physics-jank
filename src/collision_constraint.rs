@@ -13,9 +13,6 @@ pub struct CollisionConstraint {
 
     incident_body: Rc<RefCell<Body>>,
     reference_body: Rc<RefCell<Body>>,
-
-    old_lambda: f32,
-    total_lambda: f32,
 }
 
 impl Constraint for CollisionConstraint {
@@ -23,14 +20,79 @@ impl Constraint for CollisionConstraint {
         let allowed_penetration = 0.01;
         let bias_factor = 0.2;
 
+        let mut incident_body = self.incident_body.borrow_mut();
+        let mut reference_body = self.reference_body.borrow_mut();
+
         for contact in self.manifold.iter_mut() {
             //todo!("Implement the preparing of the math")
+            contact.set_to_incident(contact.point() - incident_body.center_of_gravity());
+            contact.set_to_reference(contact.point() - reference_body.center_of_gravity());
+
+            let net_inv_mass = incident_body.inv_mass() + reference_body.inv_mass();
+
+            // Effective mass (mass that affects the linear push done to the contact point)
+            let incident_normal_mass = contact.to_incident().dot(&contact.normal());
+            let reference_normal_mass = contact.to_reference().dot(&contact.normal());
+
+            let net_normal_mass = net_inv_mass
+                + incident_body.inv_inertia()
+                    * (contact.to_incident().norm_squared()
+                        - (incident_normal_mass * incident_normal_mass))
+                + reference_body.inv_inertia()
+                    * (contact.to_reference().norm_squared()
+                        - (reference_normal_mass * reference_normal_mass));
+
+            contact.set_effective_mass(net_normal_mass);
+
+            // Tangent mass
+            let tangent = Vec2::new(-contact.normal().y, contact.normal().x);
+            let incident_tangent_mass = contact.to_incident().dot(&tangent);
+            let reference_tangent_mass = contact.to_reference().dot(&tangent);
+
+            let net_tangent_mass = net_inv_mass
+                + incident_body.inv_inertia()
+                    * (contact.to_incident().norm_squared()
+                        - (incident_tangent_mass * incident_tangent_mass))
+                + reference_body.inv_inertia()
+                    * (contact.to_reference().norm_squared()
+                        - (reference_tangent_mass * reference_tangent_mass));
+
+            contact.set_tangent_mass(net_tangent_mass);
+
+            // Setting the bias
+            contact.set_bias(
+                -bias_factor * inv_dt * (contact.penetration() + allowed_penetration).min(0.),
+            );
+
+            // Applying accumulated impulses
+            contact.apply_accumulated_impulses(&mut incident_body, &mut reference_body);
         }
     }
 
     fn solve(&mut self, dt: f32) {
+        let mut incident_body = self.incident_body.borrow_mut();
+        let mut reference_body = self.reference_body.borrow_mut();
+
+        let angular_to_tangent = |a: f32, b: Vec2| -> Vec2 { Vec2::new(-a * b.y, a * b.x) };
+
         for contact in self.manifold.iter_mut() {
-            //todo!("Implement the applying of impulses")
+            let relative_velocity = incident_body.velocity()
+                + angular_to_tangent(incident_body.angular_velocity(), contact.to_incident())
+                - reference_body.velocity()
+                - angular_to_tangent(reference_body.angular_velocity(), contact.to_reference());
+
+            let normal_impulse = contact.effective_mass()
+                * (-relative_velocity.dot(&contact.normal()) + contact.bias());
+
+            // Clamping
+            let to_apply = (contact.accumulated_normal_impulse() + normal_impulse).max(0.);
+            contact.set_accumulated_normal_impulse(to_apply);
+
+            let to_apply = contact.accumulated_normal_impulse() - to_apply;
+
+            // Applying the normal impulse
+            incident_body.apply_impulse(to_apply * contact.normal());
+            reference_body.apply_impulse(-to_apply * contact.normal());
         }
     }
 
@@ -51,8 +113,6 @@ impl CollisionConstraint {
             manifold,
             incident_body,
             reference_body,
-            old_lambda: 0.,
-            total_lambda: 0.,
         }
     }
 

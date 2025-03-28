@@ -93,11 +93,11 @@ impl Body {
     }
 
     pub fn apply_impulse(&mut self, impulse: Vec2) {
-        self.velocity += impulse;
+        self.velocity += impulse * self.inv_mass();
     }
 
     pub fn apply_angular_impulse(&mut self, impulse: f32) {
-        self.angular_velocity += impulse;
+        self.angular_velocity += impulse * self.inv_inertia();
     }
 
     pub fn collider(&self) -> Option<&Polygon> {
@@ -129,7 +129,7 @@ impl Body {
     }
 
     pub fn mass(&self) -> f32 {
-        if self.is_static() {
+        if !self.is_static() {
             self.mass
         } else {
             0.
@@ -137,15 +137,15 @@ impl Body {
     }
 
     pub fn inertia(&self) -> f32 {
-        if self.is_static() {
-            0.
-        } else {
+        if !self.is_static() {
             self.inertia
+        } else {
+            0.
         }
     }
 
     pub fn inv_mass(&self) -> f32 {
-        if self.is_static() {
+        if !self.is_static() {
             1. / self.mass
         } else {
             0.
@@ -153,7 +153,7 @@ impl Body {
     }
 
     pub fn inv_inertia(&self) -> f32 {
-        if self.is_static() {
+        if !self.is_static() {
             1. / self.inertia
         } else {
             0.
